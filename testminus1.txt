@@ -1,0 +1,42 @@
+import numpy as np
+
+R = np.array([[-1,-1,-1,-1,0,-1],
+            [-1,-1,-1,0,-1,100],
+            [-1,-1,-1,0,-1,-1],
+            [-1,0,0,-1,0,-1],
+            [-1,0,0,-1,-1,100],
+            [-1,0,-1,-1,0,100]])
+
+Q = np.zeros_like(R)
+gamma = 0.8
+
+# Training
+for _ in range(100):
+    state = np.random.randint(0, Q.shape[0])
+    actions = np.where(R[state] >= 0)[0]
+    action = int(np.random.choice(actions))
+    max_index = np.argmax(Q[action])
+    Q[state, action] = R[state, action] + gamma * Q[action,max_index]
+
+    # print(state," ",actions," ",Q[action]," ",max_index)
+
+# Testing
+current_state = 0
+steps = [current_state]
+
+print(Q)
+
+while current_state != 5:
+    print(current_state," ",steps," ",np.argmax(Q[current_state]),np.max(Q))
+
+    current_state = np.argmax(Q[current_state])
+    steps.append(current_state)
+
+    
+
+# Print results
+print("Trained Q matrix:")
+print(np.round(Q / np.max(Q) * 100))
+
+print("Selected path:")
+print(steps)
