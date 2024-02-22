@@ -1,55 +1,55 @@
-import numpy as np
-fromsklearn.model_selectionimportKFold
-fromsklearn.datasetsimportmake_classification 
-fromsklearn.model_selectionimporttrain_test_split 
-fromsklearn.preprocessingimportMinMaxScaler 
-fromsklearn.linear_modelimportLogisticRegression 
-fromsklearn.metricsimportaccuracy_score 
-X = np.array([[1, 2], [3, 4], [1, 2], [3, 4]]) 
-y = np.array([1, 2, 3, 4]) 
-kf = KFold(n_splits=2) 
-fortrain_index, test_indexinkf.split(X): 
- print("TRAIN:", train_index, "TEST:", test_index) 
- X_train, X_test = X[train_index], X[test_index] 
- y_train, y_test = y[train_index], y[test_index]
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn import metrics
+import nltk
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+from sklearn.metrics import accuracy_score
 
-X, y = make_classification(n_samples=1000, n_features=20, 
-n_informative=15, n_redundant=5, random_state=7) 
-# standardize the dataset
-scaler = MinMaxScaler() 
-X = scaler.fit_transform(X) 
-# split into train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, 
-random_state=1) 
-# fit the model
-model = LogisticRegression() 
-model.fit(X_train, y_train) 
-# evaluate the model
-yhat = model.predict(X_test) 
-# evaluate predictions
-accuracy = accuracy_score(y_test, yhat) 
-print('Accuracy: %.3f' % (accuracy*100)) 
+# Download NLTK data
+nltk.download('stopwords')
+nltk.download('wordnet')
 
-X, y = make_classification(n_samples=1000, n_features=20, 
-n_informative=15, n_redundant=5, random_state=7) 
-# split into train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, 
-random_state=1) 
-# define the scaler
-scaler = MinMaxScaler() 
-# fit on the training dataset
-scaler.fit(X_train) 
-# scale the training dataset
-X_train = scaler.transform(X_train) 
-# scale the test dataset
-X_test = scaler.transform(X_test) 
-# fit the model
-model = LogisticRegression() 
-model.fit(X_train, y_train) 
-# evaluate the model
-yhat = model.predict(X_test) 
-# evaluate predictions
-accuracy = accuracy_score(y_test, yhat) 
-print('Accuracy: %.3f' % (accuracy*100))
+# Load and preprocess data
+data = pd.read_csv('https://raw.githubusercontent.com/mohitgupta-omg/Kaggle-SMS-Spam-Collection-Dataset-/master/spam.csv', encoding='latin-1')
+data.drop(['Unnamed: 2', 'Unnamed: 3', 'Unnamed: 4'], axis=1, inplace=True)
+data.columns = ['label', 'text']
+data['text'] = data['text'].str.replace('[^a-zA-Z]', ' ').str.lower().apply(lambda x: ' '.join([word for word in x.split() if word not in set(stopwords.words('english'))]))
 
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(data['text'], data['label'], test_size=0.33, random_state=123)
+
+# Vectorize text using Bag of Words model
+cv = CountVectorizer()
+X_train_cv = cv.fit_transform(X_train)
+
+# Train Logistic Regression model
+lr = LogisticRegression()
+lr.fit(X_train_cv, y_train)
+
+# Transform X_test using CV
+X_test_cv = cv.transform(X_test)
+
+# Generate predictions
+predictions = lr.predict(X_test_cv)
+
+# Evaluate and print results
+confusion_matrix = pd.DataFrame(metrics.confusion_matrix(y_test, predictions), index=['ham', 'spam'], columns=['ham', 'spam'])
+accuracy = accuracy_score(y_test, predictions)
+
+print("Confusion Matrix:")
+print(confusion_matrix)
+print("\nAccuracy:", accuracy)
+
+import matplotlib.pyplot as plt
+
+# Plot bar graph
+plt.figure(figsize=(6, 4))
+data['label'].value_counts(normalize=True).plot(kind='bar', color=['blue', 'orange'])
+plt.title('Distribution of Spam vs. Ham')
+plt.xlabel('Label')
+plt.ylabel('Percentage')
+plt.show()
 
